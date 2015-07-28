@@ -81,6 +81,6 @@
     <properties>
         <componentName>elasticsearch</componentName>
         <jiraProjectName>ELASTIC</jiraProjectName>
-        <jiraComponentId></jiraComponentId>
+        <jiraComponentId/>
     </properties>
 </project>
