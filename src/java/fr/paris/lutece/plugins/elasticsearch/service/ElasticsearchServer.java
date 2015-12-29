@@ -46,7 +46,7 @@ import java.util.Map;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.common.settings.*;
+import org.elasticsearch.common.settings.ImmutableSettings;
 
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
 
@@ -83,10 +83,9 @@ public class ElasticsearchServer
     public void start()
     {
         AppLogService.info("Starting the Elastic Search server node");
-
-        Settings builder = Settings.settingsBuilder().put(_configuration).build();
-        _server = nodeBuilder().settings(builder).build();
-
+        ImmutableSettings.Builder builder
+                        = ImmutableSettings.settingsBuilder().put(_configuration);
+               _server = nodeBuilder().settings(builder).build();
         if ("true".equalsIgnoreCase(System.getProperty("es.max.files")))
         {
             String workPath = _server.settings().get("path.work");
