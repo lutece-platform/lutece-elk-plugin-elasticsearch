@@ -83,4 +83,12 @@
         <jiraProjectName>ELASTIC</jiraProjectName>
         <jiraComponentId/>
     </properties>
+
+    <scm>
+        <connection>scm:git:https://github.com/lutece-platform/lutece-elk-plugin-elasticsearch.git</connection>
+        <developerConnection>scm:git:https://github.com/lutece-platform/lutece-elk-plugin-elasticsearch.git</developerConnection>
+        <url>https://github.com/lutece-platform/lutece-elk-plugin-elasticsearch.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
 </project>
