@@ -33,33 +33,39 @@
  */
 package fr.paris.lutece.plugins.elasticsearch.service;
 
-import fr.paris.lutece.portal.service.util.AppLogService;
-import fr.paris.lutece.portal.service.util.AppPathService;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.common.settings.ImmutableSettings;
 
-import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.node.InternalSettingsPreparer;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeValidationException;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.transport.Netty4Plugin;
+
+import fr.paris.lutece.portal.service.util.AppLogService;
+import fr.paris.lutece.portal.service.util.AppPathService;
 
 public class ElasticsearchServer
 {
+    private static final String KEY_HOME = "path.home";
+    private static final String PATH_HOME = "/WEB-INF/plugins/elasticsearch/";
     private static final String KEY_CONFIG = "path.conf";
     private static final String PATH_CONFIG = "/WEB-INF/plugins/elasticsearch/config";
     private static final String KEY_DATA = "path.data";
     private static final String PATH_DATA = "/WEB-INF/plugins/elasticsearch/data";
     private static final String KEY_LOGS = "path.logs";
     private static final String PATH_LOGS = "/WEB-INF/logs";
-    private static final String KEY_PLUGINS = "path.plugins";
-    private static final String PATH_PLUGINS = "/WEB-INF/plugins/elasticsearch/plugins";
     
     protected Map<String, String> _configuration;
     private Node _server;
@@ -71,10 +77,10 @@ public class ElasticsearchServer
     public ElasticsearchServer(Map<String, String> configuration)
     {
         _configuration = configuration;
+        _configuration.put( KEY_HOME, AppPathService.getAbsolutePathFromRelativePath(PATH_HOME));
         _configuration.put( KEY_CONFIG, AppPathService.getAbsolutePathFromRelativePath(PATH_CONFIG));
         _configuration.put( KEY_DATA, AppPathService.getAbsolutePathFromRelativePath(PATH_DATA));
         _configuration.put( KEY_LOGS, AppPathService.getAbsolutePathFromRelativePath(PATH_LOGS));
-        _configuration.put( KEY_PLUGINS, AppPathService.getAbsolutePathFromRelativePath(PATH_PLUGINS));
     }
 
     /**
@@ -83,9 +89,12 @@ public class ElasticsearchServer
     public void start()
     {
         AppLogService.info("Starting the Elastic Search server node");
-        ImmutableSettings.Builder builder
-                        = ImmutableSettings.settingsBuilder().put(_configuration);
-               _server = nodeBuilder().settings(builder).build();
+
+        Settings settings = Settings.builder().put(_configuration).build();
+        Collection<Class<? extends Plugin>> plugins = new ArrayList<Class<? extends Plugin>>();
+        plugins.add( Netty4Plugin.class );
+        _server = new MyNode( settings, plugins);
+
         if ("true".equalsIgnoreCase(System.getProperty("es.max.files")))
         {
             String workPath = _server.settings().get("path.work");
@@ -102,7 +111,12 @@ public class ElasticsearchServer
             AppLogService.info(" " + key + " : " + getValue(map, key));
         }
 
-        _server.start();
+        try {
+            _server.start();
+        } catch (NodeValidationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
         checkServerStatus();
 
@@ -114,7 +128,12 @@ public class ElasticsearchServer
      */
     public void stop()
     {
-        _server.close();
+        try {
+            _server.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -264,5 +283,11 @@ public class ElasticsearchServer
             return "<HIDDEN>";
         }
         return map.get(key);
+    }
+
+    private static class MyNode extends Node {
+        public MyNode(Settings preparedSettings, Collection<Class<? extends Plugin>> list) {
+            super(InternalSettingsPreparer.prepareEnvironment(preparedSettings, null), list);
+         }
     }
 }
